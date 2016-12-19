@@ -1,0 +1,4 @@
+name = Content Paywall
+description = Paywall module that checks for role and disables content.
+core = 7.x
+project = CC

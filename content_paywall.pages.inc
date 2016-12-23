@@ -1,20 +1,15 @@
 <?php
 
 function content_paywall_admin_settings_form() {
+  $form['content_paywall_intro'] = array(
+    '#type' => 'markup',
+    '#markup' => '<strong>Note:</strong> permission to access premium content must be set on the <a href="/admin/people/permissions#module-content_paywall">drupal permissions page</a>',
+  );
   $form['content_paywall_is_debug'] = array(
     '#title' => t('Debug Mode?'),
     '#type' => 'checkbox',
     '#description' => t('Check this box turn on debug mode, adding subscriber categories to body for debugging.'),
     '#default_value' => variable_get('content_paywall_is_debug', 0)
-  );
-
-  $form['content_paywall_role'] = array(
-    '#title' => t('Premium Role'),
-    '#type' => 'select',
-    '#required' => TRUE,
-    '#description' => t('The role that can view premium and all metered content'),
-    '#default_value' => variable_get('content_paywall_role', ''),
-    '#options' => user_roles(),
   );
 
   $form['content_paywall_messages'] = array(

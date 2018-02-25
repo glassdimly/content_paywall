@@ -1,0 +1,11 @@
+<?php
+
+/**
+ * Implements hook_uninstall();
+ *
+ * Deletes all fields associated with this module, the CONTENT_PAYWALL_FIELD field.
+ */
+function content_paywall_uninstall() {
+  field_delete_field(CONTENT_PAYWALL_FIELD);
+  field_purge_batch();
+}

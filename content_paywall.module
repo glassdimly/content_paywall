@@ -1,10 +1,11 @@
 <?php
 
+define('CONTENT_PAYWALL_FIELD', 'field_premium_options');
+
 /**
  * Implements hook_menu().
  */
 function content_paywall_menu() {
-
   $items['admin/config/content_paywall'] = array(
     'title' => 'Content Paywall',
     'page callback' => 'drupal_get_form',
@@ -21,19 +22,19 @@ function content_paywall_menu() {
  * Implements hook_node_view().
  */
 function content_paywall_node_view($node, $view_mode, $langcode) {
-  global $user;
+  $field_lang = field_language('node', $node, CONTENT_PAYWALL_FIELD);
   $is_subscriber = user_access('access premium content');
   if ((!$is_subscriber)
       && arg(0) == 'node'
       && is_numeric(arg(1))
       && $node->nid == arg(1) // Node being rendered is the page node.
       && arg(2) == NULL // Not edit screen.
-      && isset($node->field_premium_options[$node->language][0]['value'])) {
-    drupal_add_js('misc/jquery.cookie.js', array('group' => JS_LIBRARY));
-    $content_restriction_type = $node->field_premium_options[$node->language][0]['value'];
+      && isset($node->{CONTENT_PAYWALL_FIELD}[$field_lang][0]['value'])) {
+    $content_restriction_type = $node->{CONTENT_PAYWALL_FIELD}[$field_lang][0]['value'];
     if ($content_restriction_type == 'free') {
       return; // Exclude the free content.
     }
+    drupal_add_js('misc/jquery.cookie.js', array('group' => JS_LIBRARY));
     $access_type = in_array($content_restriction_type, array('metered_permanently', 'metered_timed')) ? 'metered' : 'premium';
     $access_denied_msg = content_paywall_get_paywall_message($access_type);
     $settings_array = array(
@@ -51,7 +52,6 @@ function content_paywall_node_view($node, $view_mode, $langcode) {
     drupal_add_js(array('content_paywall' => $settings_array), 'setting');
     $this_path = drupal_get_path('module', 'content_paywall');
     drupal_add_js("{$this_path}/js/content_paywall.js", array('weight' => -10));
-
     if (variable_get('content_paywall_is_debug', 0)) { // Add debug classes to body.
       global $user;
       $settings_array_debug = array(
@@ -66,6 +66,9 @@ function content_paywall_node_view($node, $view_mode, $langcode) {
   }
 }
 
+/**
+ * Implements hook_permission().
+ */
 function content_paywall_permission() {
   return array(
     'administer content_paywall' => array(
@@ -79,14 +82,26 @@ function content_paywall_permission() {
   );
 }
 
+/**
+ * Fetches the deselectors from the global variable, to be passed to jQuery.
+ *
+ * @return string: jQuery selector or empty string.
+ */
 function content_paywall_get_deselectors() {
-  $content_deselectors_array = explode(',', variable_get('content_paywall_content_deselectors', ''));
-  foreach ($content_deselectors_array as $i => $deselector) {
-    $content_deselectors_array[$i] = ':not(' . trim($content_deselectors_array[$i]) . ')';
+  $deselectors_array = array();
+  foreach (explode(',', variable_get('content_paywall_content_deselectors', '')) as $i => $deselector) {
+    if (!empty($deselector)) {
+      $deselectors_array[$i] = ':not(' . trim($deselectors_array[$i]) . ')';
+    }
   }
-  return implode($content_deselectors_array);
+  return implode($deselectors_array);
 }
 
+/**
+ * Returns the settings for block tags from content_paywall system var.
+ *
+ * @return string Json-encoded array of tags considered block tags.
+ */
 function content_paywall_get_block_tags() {
   $block_tags_array = explode( ',', variable_get('content_paywall_block_tags', 'p'));
   foreach ($block_tags_array as $i => $tag) {
@@ -95,6 +110,14 @@ function content_paywall_get_block_tags() {
   return json_encode($block_tags_array);
 }
 
+/**
+ * Returns the HTML inserted into truncated content from global var. Can vary
+ * if set in settings.
+ *
+ * @param string $type: The message type, 'metered' or 'premium'
+ *
+ * @return string
+ */
 function content_paywall_get_paywall_message($type = 'premium') {
   //@TODO add config stuff here for popup, etc
   $access_denied_msg = ($type == 'metered') ? content_paywall_variable_get_richtext('content_paywall_message_metered') : content_paywall_variable_get_richtext('content_paywall_message_premium');
@@ -102,6 +125,13 @@ function content_paywall_get_paywall_message($type = 'premium') {
   return "<aside class='cc-paywall{$limit_class}'>{$access_denied_msg}</aside>";
 }
 
+/**
+ * Gets an HTML-formatted string from system variable.
+ *
+ * @param $varname string: Name of variable to get.
+ *
+ * @return string HTML.
+ */
 function content_paywall_variable_get_richtext($varname) {
   $richtext_array = variable_get($varname, '');
   return is_array($richtext_array) ? check_markup($richtext_array['value'], $richtext_array['format']) : '';
@@ -118,7 +148,7 @@ function content_paywall_cron() {
   $query = new EntityFieldQuery();
   $query->entityCondition('entity_type', 'node')
         ->propertyCondition('created', $must_be_created_before, '<')
-        ->fieldCondition('field_premium_options', 'value', 'metered_timed', '=');
+        ->fieldCondition(CONTENT_PAYWALL_FIELD, 'value', 'metered_timed', '=');
 
   $results = $query->execute();
   $count = 0;
@@ -126,7 +156,7 @@ function content_paywall_cron() {
     foreach ($type as $nid => $result) {
       try {
         $node_w = entity_metadata_wrapper('node', $nid);
-        $node_w->field_premium_options = 'premium';
+        $node_w->{CONTENT_PAYWALL_FIELD} = 'premium';
         $node_w->save();
         $count++;
         if (TRUE) {}

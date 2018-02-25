@@ -144,12 +144,11 @@ function content_paywall_variable_get_richtext($varname) {
  */
 function content_paywall_cron() {
   $time_until_moved_to_premium = variable_get('content_paywall_metered_timeout', NULL);
-  $must_be_created_before = date('Y-m-d', time() - ($time_until_moved_to_premium * 84600));
+  $must_be_created_before = time() - ($time_until_moved_to_premium * 84600);
   $query = new EntityFieldQuery();
   $query->entityCondition('entity_type', 'node')
         ->propertyCondition('created', $must_be_created_before, '<')
         ->fieldCondition(CONTENT_PAYWALL_FIELD, 'value', 'metered_timed', '=');
-
   $results = $query->execute();
   $count = 0;
   foreach ($results as $type) {
@@ -159,9 +158,8 @@ function content_paywall_cron() {
         $node_w->{CONTENT_PAYWALL_FIELD} = 'premium';
         $node_w->save();
         $count++;
-        if (TRUE) {}
       } catch (EntityMetadataWrapperException $e) {
-        watchdog('EntityMetadataWrapperException @msg', array('@msg' => $e->getMessage() . ': ' . $e->getTraceAsString()));
+        watchdog('EntityMetadataWrapperException @msg', array('@msg' => $e->getTraceAsString() . ': ' . $e->getTraceAsString()));
       }
     }
   }

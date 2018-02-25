@@ -51,7 +51,7 @@ function content_paywall_node_view($node, $view_mode, $langcode) {
     );
     drupal_add_js(array('content_paywall' => $settings_array), 'setting');
     $this_path = drupal_get_path('module', 'content_paywall');
-    drupal_add_js("{$this_path}/js/content_paywall.js", array('weight' => -10));
+    drupal_add_js("{$this_path}/js/content_paywall.js", array('weight' => -10, 'scope' => 'footer'));
     if (variable_get('content_paywall_is_debug', 0)) { // Add debug classes to body.
       global $user;
       $settings_array_debug = array(

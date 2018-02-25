@@ -55,7 +55,7 @@
         $(contentSelectors + contentDeselectors).children().each(function () {
           var charCount = $(this).text().length;
           if (charCount > Drupal.settings.content_paywall.minimum_paragraph
-            && $.inArray($(this).attr('tagName').toLowerCase(), block_tags) >= 0) {
+            && $.inArray($(this)[0].nodeName.toLowerCase(), block_tags) >= 0) {
             paragraphCount += 1;
           }
           if (paragraphCount > Drupal.settings.content_paywall.paragraphs_allowed) {

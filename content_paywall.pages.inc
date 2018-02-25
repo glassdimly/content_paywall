@@ -5,11 +5,19 @@ function content_paywall_admin_settings_form() {
     '#type' => 'markup',
     '#markup' => '<strong>Note:</strong> permission to access premium content must be set on the <a href="/admin/people/permissions#module-content_paywall">drupal permissions page</a>',
   );
+
   $form['content_paywall_is_debug'] = array(
     '#title' => t('Debug Mode?'),
     '#type' => 'checkbox',
     '#description' => t('Check this box turn on debug mode, adding subscriber categories to body for debugging.'),
     '#default_value' => variable_get('content_paywall_is_debug', 0)
+  );
+  
+  $form['content_paywall_content_types'] = array(
+    '#title' => t('Content Type(s) to Which Fields Should Be Added'),
+    '#type' => 'checkboxes',
+    '#description' => t('Select the content types to add the default paywall field, %field_name to that content type.', array('%field_name' => CONTENT_PAYWALL_FIELD)),
+    '#options' => node_type_get_names()
   );
 
   $form['content_paywall_messages'] = array(
@@ -78,7 +86,6 @@ function content_paywall_admin_settings_form() {
       '#format' => variable_get('content_paywall_message_premium', array('format' => 'filtered_html'))['format'],
       '#default_value' => variable_get('content_paywall_message_premium', array('value' => 'You must subscribe to see this premium content.'))['value']
     ),
-
   );
 
   $form['content_paywall_truncation'] = array(
@@ -131,77 +138,51 @@ function content_paywall_admin_settings_form() {
       '#description' => t('Add tags that will be counted as paragraphs for the purposes of truncation. Comma separated. Example: <em>p,div,table</em>.'),
       '#default_value' => variable_get('content_paywall_block_tags', 'p')
     )
-
   );
+  $form['#submit'][] = 'content_paywall_settings_submit';
+
   return system_settings_form($form);
 }
 
-//Function definition
-
-function timeAgo($time_ago)
-{
-  $time_ago = date(DATE_RSS, $time_ago);
-  $time_ago = strtotime($time_ago);
-  $cur_time   = time();
-  $time_elapsed   = $cur_time - $time_ago;
-  $seconds    = $time_elapsed ;
-  $minutes    = round($time_elapsed / 60 );
-  $hours      = round($time_elapsed / 3600);
-  $days       = round($time_elapsed / 86400 );
-  $weeks      = round($time_elapsed / 604800);
-  $months     = round($time_elapsed / 2600640 );
-  $years      = round($time_elapsed / 31207680 );
-  // Seconds
-  if($seconds <= 60){
-    return "just now";
-  }
-  //Minutes
-  else if($minutes <=60){
-    if($minutes==1){
-      return "one minute ago";
+/**
+ * Additional submit handle for the settings form.
+ */
+function content_paywall_settings_submit($form, &$form_state) {
+  if (!empty($form_state['values']['content_paywall_content_types'])) {
+    $settings = array('allowed_values' => array(
+      'premium' => t('Premium'),
+      'metered_permanently' => t('Metered (permanently)'),
+      'metered_timed' => t('Metered (becomes premium)'),
+      'free' => t('Free')
+    ));
+    // Create field if it doesn't exist.
+    if (!($field_info = field_info_field(CONTENT_PAYWALL_FIELD))) {
+          field_create_field(array(
+            'field_name' => CONTENT_PAYWALL_FIELD,
+            'type' => 'list_text',
+            'settings' => $settings,
+          ));
     }
-    else{
-      return "$minutes minutes ago";
-    }
-  }
-  //Hours
-  else if($hours <=24){
-    if($hours==1){
-      return "an hour ago";
-    }else{
-      return "$hours hrs ago";
-    }
-  }
-  //Days
-  else if($days <= 7){
-    if($days==1){
-      return "yesterday";
-    }else{
-      return "$days days ago";
+    foreach($form_state['values']['content_paywall_content_types'] as $bundle) {
+      if (empty($bundle)) {
+        continue;
+      }
+      if (field_info_instance('node', CONTENT_PAYWALL_FIELD, $bundle)) {
+        drupal_set_message(t('Refused to create field %field on %bundle because it already exists. Delete this field first and try again.', array('%field' => CONTENT_PAYWALL_FIELD, '%bundle' => $bundle)), 'warning');
+        continue;
+      }
+      // Create requested field instance.
+      field_create_instance(array(
+        'field_name' => CONTENT_PAYWALL_FIELD,
+        'entity_type' => 'node',
+        'bundle' => $bundle,
+        'label' => t('Content Paywall Trunction'),
+        'description' => t('Select from these options to determine the conditions under which this content should be truncated.'),
+        'required' => TRUE,
+        'default_value' => array(array('value' => 'free')),
+        'settings' => $settings,
+      ));
+      drupal_set_message(t('Created field %field on %bundle.', array('%field' => CONTENT_PAYWALL_FIELD, '%bundle' => $bundle)), 'status');
     }
   }
-  //Weeks
-  else if($weeks <= 4.3){
-    if($weeks==1){
-      return "a week ago";
-    }else{
-      return "$weeks weeks ago";
-    }
-  }
-  //Months
-  else if($months <=12){
-    if($months==1){
-      return "a month ago";
-    }else{
-      return "$months months ago";
-    }
-  }
-  //Years
-  else{
-    if($years==1){
-      return "one year ago";
-    }else{
-      return "$years years ago";
-    }
-  }
-  }
+}

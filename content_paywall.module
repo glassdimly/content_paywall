@@ -34,7 +34,6 @@ function content_paywall_node_view($node, $view_mode, $langcode) {
     if ($content_restriction_type == 'free') {
       return; // Exclude the free content.
     }
-    drupal_add_library('system', 'jquery.cookie');
     $access_type = in_array($content_restriction_type, array('metered_permanently', 'metered_timed')) ? 'metered' : 'premium';
     $access_denied_msg = content_paywall_get_paywall_message($access_type);
     $settings_array = array(

@@ -39,11 +39,11 @@ function content_paywall_admin_settings_form() {
     ),
 
     'content_paywall_premium_timeout' => array(
-      '#title' => t('"Premium" Timeout'),
+      '#title' => t('"Premium Timed" Timeout'),
       '#type' => 'textfield',
       '#size' => 3,
       '#field_suffix' => t('days'),
-      '#description' => t('The number of days after which content with `premium` value becomes `free`'),
+      '#description' => t('The number of days after which content with `premium_timed` value becomes `free`'),
       '#default_value' => variable_get('content_paywall_premium_timeout', '')
      ),
 
@@ -60,7 +60,8 @@ function content_paywall_admin_settings_form() {
       '#title' => t('Restrict to one pop-up per user session?'),
       '#type' => 'checkbox',
       '#description' => t('Pop up the paywall message once per user session.'),
-      '#default_value' => variable_get('content_paywall_hover_scrollto', '0')
+      '#default_value' => variable_get('content_paywall_hover_scrollto', '0'),
+      '#access' => FALSE // @TODO implement this
     ),
 
     'content_paywall_hover_bother_frequency' => array(
@@ -160,13 +161,15 @@ function content_paywall_admin_settings_form() {
  */
 function content_paywall_settings_submit($form, &$form_state) {
   if (!empty($form_state['values']['content_paywall_content_types'])) {
-    $settings = array('allowed_values' => array(
-      'free' => t('Free'),
-      'premium' => t('Premium'),
-      'metered_permanently' => t('Metered (permanently)'),
-      'metered_timed' => t('Metered (becomes premium)'),
-      'premium_timed' => t('Premium (becomes free)'),
-    ));
+    $settings = array(
+      'allowed_values' => array(
+        'free' => t('Free'),
+        'premium' => t('Premium'),
+        'metered_permanently' => t('Metered (permanently)'),
+        'metered_timed' => t('Metered (becomes premium)'),
+        'premium_timed' => t('Premium (becomes free)'),
+      ),
+    );
     // Create field if it doesn't exist.
     if (!($field_info = field_info_field(CONTENT_PAYWALL_FIELD))) {
           field_create_field(array(

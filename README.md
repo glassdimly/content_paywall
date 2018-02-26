@@ -10,16 +10,11 @@ Installation:
 * You probably want to hide the field under your bundle's "Display Options" so it's not displayed. (@TODO automate this)
 
 These options will be added on a field called 'field_premium_options':
-* Premium
-* Metered (permanently)
-* Metered (becomes premium)
-* Free
-
-This is how these options work:
-* Content that is "Premium" is available only to the subscriber role.
-* A user may view only x number of pieces of "Metered (permanently)" content is within y time period (configurable).
-* Content that is "Metered (becomes premium)" starts as metered but after z time, becomes "Premium".
-* Content that is "Premium" is unrestricted. This is the default value
+* Premium: Content that is "Premium" is available only to the subscriber role.
+* Metered (permanently): A user may view only x number of pieces of "Metered (permanently)" content is within y time period (configurable).
+* Metered (becomes premium): Content that is "Metered (becomes premium)" starts as metered but after z time, becomes "Premium".
+* Premium (becomes free): Content that is "Premium (becomes free)" starts as "Premium", but becomes "Free" after a period of time elapses.
+* Free: Content that is "Free" is unrestricted. This is the default value
 
 Any of these options can be deleted from a field instance to remove that particular functionality from that particular node bundle.
 

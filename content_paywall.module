@@ -139,31 +139,44 @@ function content_paywall_variable_get_richtext($varname) {
 /**
  * Implementation of hook_cron().
  *
- * Moves content from 'metered (becomes premium)' status to 'premium'.
+ * Moves content from 'metered (becomes premium)' status to 'premium', or from
+ * 'premium_timed (becomes free)' status to 'free'.
  */
 function content_paywall_cron() {
-  $time_until_moved_to_premium = variable_get('content_paywall_metered_timeout', NULL);
-  $must_be_created_before = time() - ($time_until_moved_to_premium * 84600);
-  $query = new EntityFieldQuery();
-  $query->entityCondition('entity_type', 'node')
-        ->propertyCondition('created', $must_be_created_before, '<')
-        ->fieldCondition(CONTENT_PAYWALL_FIELD, 'value', 'metered_timed', '=');
-  $results = $query->execute();
-  $count = 0;
-  foreach ($results as $type) {
-    foreach ($type as $nid => $result) {
-      try {
-        $node_w = entity_metadata_wrapper('node', $nid);
-        $node_w->{CONTENT_PAYWALL_FIELD} = 'premium';
-        $node_w->save();
-        $count++;
-      } catch (EntityMetadataWrapperException $e) {
-        watchdog('EntityMetadataWrapperException @msg', array('@msg' => $e->getTraceAsString() . ': ' . $e->getTraceAsString()));
+  $cron_settings = array(
+    array(
+      'initial_val' => 'metered_timed',
+      'time_until_moved' => time() - variable_get('content_paywall_metered_timeout', 0) * 84600,
+      'target_val' => 'premium'
+    ),
+    array(
+      'initial_val' => 'premium_timed',
+      'time_until_moved' => time() - variable_get('content_paywall_premium_timeout', 0) * 84600,
+      'target_val' => 'free'
+    ),
+  );
+  foreach ($cron_settings as $setting) {
+    $query = new EntityFieldQuery();
+    $results = $query->entityCondition('entity_type', 'node')
+      ->propertyCondition('created', $setting['time_until_moved'], '<')
+      ->fieldCondition(CONTENT_PAYWALL_FIELD, 'value', $setting['initial_val'], '=')
+      ->execute();
+    $count = 0;
+    foreach ($results as $type) {
+      foreach ($type as $nid => $result) {
+        try {
+          $node_w = entity_metadata_wrapper('node', $nid);
+          $node_w->{CONTENT_PAYWALL_FIELD} = $setting['target_val'];
+          $node_w->save();
+          $count++;
+        } catch (EntityMetadataWrapperException $e) {
+          watchdog('EntityMetadataWrapperException @msg', array('@msg' => $e->getTraceAsString() . ': ' . $e->getTraceAsString()));
+        }
       }
     }
-  }
-  // Log how many nodes were updated.
-  if ($count == 0) {
-    watchdog('content_paywall', 'content_paywall cron updated @count nodes at ' . date('g:ia', time()), array('@count' => $count), WATCHDOG_NOTICE, $link = NULL);
+    // Log how many nodes were updated.
+    if ($count == 0) {
+      watchdog('content_paywall', 'content_paywall cron updated @count nodes at ' . date('g:ia', time()), array('@count' => $count), WATCHDOG_NOTICE, $link = NULL);
+    }
   }
 }

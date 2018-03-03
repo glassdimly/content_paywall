@@ -8,7 +8,7 @@
         return (value != null) ? unescape(value[1]) : null;
       };
       console.log(Drupal.settings.content_paywall_debug);
-      console.log(getCookie('content_paywall_js'));
+      console.log('Nids accessed (cookie):', getCookie('content_paywall_js'));
       var subscriber_access_check = Drupal.settings.content_paywall_debug.subscriber_access_check ? 1 : 0;
       var username = Drupal.settings.content_paywall_debug.username;
       var session = Drupal.settings.content_paywall_debug.session;

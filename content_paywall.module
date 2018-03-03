@@ -43,7 +43,7 @@ function content_paywall_node_view($node, $view_mode, $langcode) {
       'content_selector' => variable_get('content_paywall_content_selector', '.field-name-body'),
       'expiry' => variable_get('content_paywall_metered_access_reset', 60),
       'nid' => arg(1),
-      'article_limit' => variable_get('content_paywall_article_limit', 3),
+      'article_limit' => variable_get('content_paywall_metered_limit', 3),
       'access_denied_msg' => $access_denied_msg,
       'content_restriction_type' => $content_restriction_type,
       'block_tags' => content_paywall_get_block_tags(),

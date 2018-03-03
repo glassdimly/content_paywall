@@ -26,34 +26,35 @@ jQuery.cpCookie=function(b,j,m){if(typeof j!="undefined"){m=m||{};if(j===null){j
       }
 
       var has_access = contentRestriction == 'premium' ? false : true;
-      // Now, if it's metered, check, cookie, see if they've passed the limit.
+      // Now, if it's metered, check cookie to see if they've passed the limit.
       if (contentRestriction.substring(0, 7) == "metered") {
         var cookieArray = $.cpCookie('content_paywall_js') ? $.makeArray($.cpCookie('content_paywall_js').split(',')) : [];
-        if (cookieArray.length) {
-          // If they've already gotten to read the article grant them access
-          if (cookieArray.length >= articleLimit && $.inArray(nid, cookieArray) == -1) {
-            has_access = false;
-          }
-          // If the nid is not in the array and they're not over the limit.
-          else if ($.inArray(nid, cookieArray) == -1 && !(cookieArray.length > articleLimit)) {
-            cookieArray.push(nid); // add new nid to cookie.
-            $.cpCookie('content_paywall_js', cookieArray.join(','), {
-              expires: cookieExpiry,
-              path: '/',
-              domain: document.domain
-            });
-          }
+        // If they've already gotten to read the article grant them access.
+        var has_accessed = $.inArray(nid, cookieArray) >= 0 ? true : false;
+        var is_over_limit = cookieArray.length >= articleLimit;
+        if (is_over_limit && !has_accessed) {
+          has_access = false;
         }
-        else {
-          $.cpCookie('content_paywall_js', nid, {
+        // If they haven't read it but now get permanent access, and they're
+        // not over the limit, add to cookie.
+        if (has_access && !(is_over_limit) && !has_accessed) {
+          cookieArray.push(nid); // add new nid to cookie.
+          $.cpCookie('content_paywall_js', cookieArray.join(','), {
             expires: cookieExpiry,
             path: '/',
             domain: document.domain
           });
         }
-        $('body').addClass('paywall-accessed-nids--' + cookieArray.join('-'));
+      }
+      else {
+        $.cpCookie('content_paywall_js', nid, {
+          expires: cookieExpiry,
+          path: '/',
+          domain: document.domain
+        });
       }
       if (!has_access) {
+        // Truncate content.
         var paragraphCount = 0;
         $(contentSelectors + contentDeselectors).children().each(function () {
           var charCount = $(this).text().length;
